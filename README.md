@@ -1219,4 +1219,1001 @@ void updateBuses() {
             bus->waitTime = 3;
         }
     }
-}
+}  
+
+
+// BINARY SUDOKU
+
+#include <stdio.h> 
+
+#include <stdlib.h> 
+
+#include <stdbool.h> 
+
+#include <time.h> 
+
+#include <math.h> 
+
+#include <string.h> 
+
+#define SIZE 9 
+
+ 
+
+int score; 
+
+ 
+
+ 
+
+ 
+
+// Function Prototypes 
+
+void initializeBoard(int board[SIZE][SIZE], bool boardLocation[SIZE][SIZE]); 
+
+void displayBoard(int board[SIZE][SIZE], bool boardLocation[SIZE][SIZE]); 
+
+int generateRandomPiece(int piece[3][3], bool pieceLocation[3][3]); 
+
+void printPiece(int piece[3][3], bool pieceLocation[3][3]); 
+
+bool placeNewPiece(int board[SIZE][SIZE], int piece[3][3], bool pieceLocation[3][3], int row, int col, bool boardLocation[SIZE][SIZE]); 
+
+int binaryToDecimal(int binary[3][3]); 
+
+void checkCompletion(int board[SIZE][SIZE], bool boardLocation[SIZE][SIZE]); 
+
+ 
+
+bool rowCompleted[SIZE] = {false};                  // It checks the completion of rows     
+
+bool columnCompleted[SIZE] = {false};              // It checks the completion of columns 
+
+bool blockCompleted[SIZE / 3][SIZE / 3] = {false}; // It checks the 3x3 blocks for completion 
+
+ 
+
+ 
+
+ 
+
+// Predefined random pieces 
+
+int pieces[10][3][3] = { 
+
+ 
+
+    // Piece 1 
+
+    {{1, 0, 0}, 
+
+     {0, 0, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 2 
+
+    {{1, 0, 0}, 
+
+     {1, 0, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 3 
+
+    {{1, 1, 0}, 
+
+     {0, 0, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 4 
+
+    {{1, 0, 0}, 
+
+     {1, 0, 0}, 
+
+     {1, 0, 0}}, 
+
+ 
+
+    // Piece 5 
+
+    {{1, 1, 1}, 
+
+     {0, 0, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 6 
+
+    {{1, 1, 0}, 
+
+     {1, 0, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 7 
+
+    {{1, 1, 0}, 
+
+     {0, 1, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 8 
+
+    {{1, 0, 0}, 
+
+     {1, 1, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 9 
+
+    {{0, 1, 0}, 
+
+     {1, 1, 0}, 
+
+     {0, 0, 0}}, 
+
+ 
+
+    // Piece 10 
+
+    {{1, 1, 0}, 
+
+     {1, 1, 0}, 
+
+     {0, 0, 0}}}; 
+
+ 
+
+bool piecesLocation[10][3][3] = { 
+
+    // Piece 1 
+
+    {{true, false, false}, 
+
+     {false, false, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 2 
+
+ 
+
+    {{true, false, false}, 
+
+     {true, false, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 3 
+
+    {{true, true, false}, 
+
+     {false, false, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 4 
+
+    {{true, false, false}, 
+
+     {true, false, false}, 
+
+     {true, false, false}}, 
+
+ 
+
+    // Piece 5 
+
+    {{true, true, true}, 
+
+     {false, false, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 6 
+
+    {{true, true, false}, 
+
+     {true, true, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 7 
+
+    {{true, true, false}, 
+
+     {true, true, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 8 
+
+    {{true, true, false}, 
+
+     {true, true, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 9 
+
+    {{true, true, false}, 
+
+     {true, true, false}, 
+
+     {false, false, false}}, 
+
+ 
+
+    // Piece 10 
+
+    {{true, true, false}, 
+
+     {true, true, false}, 
+
+     {false, false, false}}}; 
+
+// Initialize the Sudoku board 
+
+void initializeBoard(int board[SIZE][SIZE], bool boardLocation[SIZE][SIZE]) 
+
+{ 
+
+    for (int i = 0; i < SIZE; i++) 
+
+    { 
+
+        for (int j = 0; j < SIZE; j++) 
+
+        { 
+
+            board[i][j] = 0; 
+
+            boardLocation[i][j] = false; 
+
+        } 
+
+    } 
+
+} 
+
+ 
+
+// Display the Sudoku board with the score 
+
+void displayBoard(int board[SIZE][SIZE], bool boardLocation[SIZE][SIZE]) 
+
+{ 
+
+    printf("    A B C   D E F   G H I      \n"); 
+
+    printf("  +-------+-------+-------+\t\t\t\t SCORE:%d\n", score); 
+
+    for (int i = 0; i < SIZE; i++) 
+
+    { 
+
+        printf("%d |", i + 1); 
+
+        for (int j = 0; j < SIZE; j++) 
+
+        { 
+
+            if (boardLocation[i][j]) 
+
+            { 
+
+                printf(" %d", board[i][j]); 
+
+            } 
+
+            else 
+
+            { 
+
+                printf(" ."); 
+
+            } 
+
+ 
+
+            if ((j + 1) % 3 == 0 && j != SIZE - 1) 
+
+            { 
+
+                printf(" |"); 
+
+            } 
+
+        } 
+
+        printf(" |\n"); 
+
+        if ((i + 1) % 3 == 0 && i != SIZE - 1) 
+
+        { 
+
+            printf("  +-------+-------+-------+\n"); 
+
+        } 
+
+    } 
+
+    printf("  +-------+-------+-------+\n"); 
+
+} 
+
+ 
+
+// Generate a predefined random piece 
+
+int generateRandomPiece(int piece[3][3], bool pieceLocation[3][3]) 
+
+{ 
+
+    int randomIndex = rand() % 10; 
+
+    for (int i = 0; i < 3; i++) 
+
+    { 
+
+        for (int j = 0; j < 3; j++) 
+
+        { 
+
+            piece[i][j] = pieces[randomIndex][i][j]; 
+
+            pieceLocation[i][j] = piecesLocation[randomIndex][i][j]; 
+
+        } 
+
+    } 
+
+    return randomIndex; 
+
+} 
+
+ 
+
+// Print the generated piece 
+
+void printPiece(int piece[3][3], bool pieceLocation[3][3]) 
+
+{ 
+
+    for (int i = 0; i < 3; i++) 
+
+    { 
+
+        for (int j = 0; j < 3; j++) 
+
+        { 
+
+            if (pieceLocation[i][j]) 
+
+            { 
+
+                printf("%d ", piece[i][j]); 
+
+            } 
+
+            else 
+
+            { 
+
+                printf("* "); 
+
+            } 
+
+        } 
+
+        printf("\n"); 
+
+    } 
+
+} 
+
+ 
+
+// Place a new piece on the board 
+
+bool placeNewPiece(int board[SIZE][SIZE], int piece[3][3], bool pieceLocation[3][3], int row, int col, bool boardLocation[SIZE][SIZE]) 
+
+{ 
+
+    for (int i = 0; i < 3; i++) 
+
+    { 
+
+        for (int j = 0; j < 3; j++) 
+
+        { 
+
+            if (pieceLocation[i][j]) 
+
+            { 
+
+                if (row + i >= SIZE || col + j >= SIZE || boardLocation[row + i][col + j]) 
+
+                { 
+
+                    printf("Error: Piece cannot be placed at the specified location.\n"); 
+
+                    return false; 
+
+                } 
+
+            } 
+
+        } 
+
+    } 
+
+ 
+
+    for (int i = 0; i < 3; i++) 
+
+    { 
+
+        for (int j = 0; j < 3; j++) 
+
+        { 
+
+            if (pieceLocation[i][j]) 
+
+            { 
+
+                board[row + i][col + j] = piece[i][j]; 
+
+                boardLocation[row + i][col + j] = true; 
+
+            } 
+
+        } 
+
+    } 
+
+    return true; 
+
+} 
+
+ 
+
+bool canPlacePiece(int board[SIZE][SIZE], int piece[3][3], bool pieceLocation[3][3], bool boardLocation[SIZE][SIZE]) { 
+
+    for (int row = 0; row <= SIZE - 3; row++) { 
+
+        for (int col = 0; col <= SIZE - 3; col++) { 
+
+            bool canPlace = true; 
+
+ 
+
+            for (int i = 0; i < 3 && canPlace; i++) { 
+
+                for (int j = 0; j < 3; j++) { 
+
+                    if (pieceLocation[i][j] && (boardLocation[row + i][col + j] || row + i >= SIZE || col + j >= SIZE)) { 
+
+                        canPlace = false; 
+
+                        break; 
+
+                    } 
+
+                } 
+
+            } 
+
+ 
+
+            if (canPlace) { 
+
+                return true; // There is one more place where the piece can be placed 
+
+            } 
+
+        } 
+
+    } 
+
+    return false; // There is no place to be placed 
+
+} 
+
+ 
+
+// Convert binary to decimal 
+
+int binaryToDecimal(int binary[3][3]) 
+
+{ 
+
+    int decimal = 0; 
+
+    int power = 0; 
+
+ 
+
+    for (int i = 2; i >= 0; i--) 
+
+    { 
+
+        for (int j = 2; j >= 0; j--) 
+
+        { 
+
+            if (binary[i][j] == 1) 
+
+            { 
+
+                decimal += pow(2, power); 
+
+            } 
+
+            power++; 
+
+        } 
+
+    } 
+
+    return decimal; 
+
+} 
+
+ 
+
+// Check for completed rows or blocks and update the score 
+
+void checkCompletion(int board[SIZE][SIZE], bool boardLocation[SIZE][SIZE]) 
+
+{ 
+
+    // Check rows 
+
+    int binary[3][3]={0}; 
+
+    for (int i = 0; i < SIZE; i++) 
+
+    { 
+
+        bool isRowFilled = true; 
+
+        for (int j = 0; j < SIZE; j++) 
+
+        { 
+
+            if (!boardLocation[i][j]) 
+
+            { 
+
+                isRowFilled = false; 
+
+                break; 
+
+            } 
+
+        } 
+
+        if (isRowFilled) 
+
+        { 
+
+         
+
+            rowCompleted[i] = true; 
+
+             
+
+        } 
+
+    } 
+
+         
+
+             
+
+             
+
+ 
+
+    // Check columns 
+
+    for (int j = 0; j < SIZE; j++) 
+
+    { 
+
+        bool iscolFilled = true; 
+
+        for (int i = 0; i < SIZE; i++) 
+
+        { 
+
+            if (!boardLocation[i][j]) 
+
+            { 
+
+                iscolFilled = false; 
+
+                break; 
+
+            } 
+
+        } 
+
+        if (iscolFilled) 
+
+        { 
+
+            columnCompleted[j] = true; 
+
+            
+
+        } 
+
+         
+
+    } 
+
+ 
+
+    // Check 3x3 blocks 
+
+    for (int blockRow = 0; blockRow < SIZE; blockRow += 3) 
+
+    { 
+
+        for (int blockCol = 0; blockCol < SIZE; blockCol += 3) 
+
+        { 
+
+             
+
+            bool isBlockFilled = true; 
+
+            for (int i = 0; i < 3; i++) 
+
+            { 
+
+                for (int j = 0; j < 3; j++) 
+
+                { 
+
+                    if (!boardLocation[blockRow + i][blockCol + j]) 
+
+                    { 
+
+                        isBlockFilled = false; 
+
+                        break; 
+
+                    } 
+
+                } 
+
+                if (isBlockFilled) 
+
+                { 
+
+                    blockCompleted[blockRow / 3][blockCol / 3] = true; 
+
+                      
+
+                } 
+
+            } 
+
+            if (isBlockFilled) 
+
+            { 
+
+                int binary[3][3] = {0}; 
+
+                for (int i = 0; i < 3; i++) 
+
+                { 
+
+                    for (int j = 0; j < 3; j++) 
+
+                    { 
+
+                        binary[i][j] = board[blockRow + i][blockCol + j]; 
+
+                         
+
+ 
+
+                    } 
+
+                } 
+
+                     score += binaryToDecimal(binary); 
+
+               
+
+                // Reset the block 
+
+                for (int i = 0; i < 3; i++) 
+
+                { 
+
+                    for (int j = 0; j < 3; j++) 
+
+                    { 
+
+                        board[blockRow + i][blockCol + j] = 0; 
+
+                        boardLocation[blockRow + i][blockCol + j] = false; 
+
+                    } 
+
+                } 
+
+            } 
+
+        } 
+
+    } 
+
+ 
+
+    // row reset 
+
+    for (int i = 0; i < SIZE; i++) 
+
+    { 
+
+        if (rowCompleted[i]) 
+
+        { 
+
+            int binary[3][3] = {0}; 
+
+            for (int j = 0; j < 3; j++) 
+
+            { 
+
+                binary[0][j] = board[i][j]; 
+
+                binary[1][j] = board[i][j + 3]; 
+
+                binary[2][j] = board[i][j + 6]; 
+
+            } 
+
+             
+
+                score += binaryToDecimal(binary); 
+
+         
+
+            // Satırı sıfırla 
+
+            for (int j = 0; j < SIZE; j++) 
+
+            { 
+
+                board[i][j] = 0; 
+
+                boardLocation[i][j] = false; 
+
+            } 
+
+        } 
+
+    } 
+
+ 
+
+    // column reset 
+
+    for (int j = 0; j < SIZE; j++) 
+
+    { 
+
+        if (columnCompleted[j]) 
+
+        { 
+
+            int binary[3][3] = {0}; 
+
+            for (int i = 0; i < 3; i++) 
+
+            { 
+
+                binary[i][0] = board[i][j]; 
+
+                binary[i][1] = board[i + 3][j]; 
+
+                binary[i][2] = board[i + 6][j]; 
+
+            } 
+
+             score += binaryToDecimal(binary); 
+
+ 
+
+             
+
+            for (int i = 0; i < SIZE; i++) 
+
+            { 
+
+                board[i][j] = 0; 
+
+                boardLocation[i][j] = false; 
+
+            } 
+
+        } 
+
+    } 
+
+} 
+
+int main() 
+
+{ 
+
+    printf("\t===== BINARY SUDOKU =====\n\n"); 
+
+ 
+
+    printf("Welcome to Binary Sudoku! Here's how you play:\n\n"); 
+
+    printf("1. The game starts with a 9x9 board  with empty cells.\n"); 
+
+    printf("2. Your goal is to fill the board\n"); 
+
+    printf("3. To place a piece on the board, write coordinates(e.g A5).\n"); 
+
+    printf("4. Enter 'Q' to quit the game.\n\n"); 
+
+ 
+
+    int board[SIZE][SIZE]; 
+
+    bool boardLocation[SIZE][SIZE]; 
+
+    bool validLocation = true; 
+
+    int piece[3][3]; 
+
+    bool pieceLocation[3][3]; 
+
+    int row, col; 
+
+    int randomIndex = 0; 
+
+ 
+
+    initializeBoard(board, boardLocation); 
+
+    displayBoard(board, boardLocation); 
+
+ 
+
+    generateRandomPiece(piece, pieceLocation); 
+
+    while (true) 
+
+    { 
+
+        if (validLocation) 
+
+        { 
+
+        printf("\nGenerated Piece:\n"); 
+
+        printPiece(piece, pieceLocation); 
+
+ 
+
+             
+
+             
+
+        } 
+
+ 
+
+        printf("\nEnter coordinates to place pieces OR press Q to quit (e.g., A5): "); 
+
+        char input[10]; 
+
+        scanf("%s", input); 
+
+ 
+
+        if (input[0] == 'Q' || input[0] == 'q') 
+
+        { 
+
+            printf("Game over! Final Score: %d\n", score); 
+
+            break; 
+
+        } 
+
+        if(strlen(input) != 2 || input[0] < 'A' || input[0]>'I' || input[1]<'1' || input[1]>'9' )  
+
+        { 
+
+            printf("Invalid input. Please enter coordinates in the format A1-A9 or I9.\n\n\n"); 
+
+            validLocation=false; 
+
+            continue; 
+
+        } 
+
+        col = input[0] - 'A'; 
+
+        row = input[1] - '1'; 
+
+        if (placeNewPiece(board, piece, pieceLocation, row, col, boardLocation)) 
+
+            {    checkCompletion(board, boardLocation); 
+
+                displayBoard(board, boardLocation); 
+
+                 
+
+                generateRandomPiece(piece, pieceLocation); 
+
+                validLocation = true; 
+
+            }else{ 
+
+            printf("Invalid placement. Try again.\n"); 
+
+            validLocation = false; 
+
+            } 
+
+ 
+
+ 
+
+        
+
+    } 
+
+ 
+
+    return 0; 
+
+} 
